@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StreakPack — Social Habit System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0A0A0F;
+  --surface: #13131A;
+  --surface2: #1C1C27;
+  --surface3: #242433;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #F0EFF8;
+  --muted: #8B8AA0;
+  --accent: #7C5CFC;
+  --accent2: #C084FC;
+  --accent3: #F472B6;
+  --neon: #A78BFA;
+  --green: #34D399;
+  --amber: #FBBF24;
+  --red: #F87171;
+  --blue: #60A5FA;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r: 16px;
+  --r-sm: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; min-height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 72px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+  gap: 6px;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+.logo-mark {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+.nav-item {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+  border: none; background: transparent;
+  color: var(--muted);
+}
+.nav-item:hover, .nav-item.active { background: var(--surface2); color: var(--text); }
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -1px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 22px;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+}
+.nav-item svg { width: 20px; height: 20px; }
+.nav-bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.avatar-sm {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, #7C5CFC, #F472B6);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 13px; color: #fff;
+  cursor: pointer;
+}
+
+/* ── MAIN ── */
+.main { margin-left: 72px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 60px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  position: sticky; top: 0; z-index: 90;
+}
+.topbar-title { font-family: var(--font-display); font-weight: 700; font-size: 17px; flex: 1; }
+.tab-bar { display: flex; gap: 4px; background: var(--surface2); border-radius: var(--r-sm); padding: 4px; }
+.tab {
+  padding: 6px 16px; border-radius: 7px; font-size: 13px; font-weight: 500;
+  cursor: pointer; color: var(--muted); transition: all 0.15s; border: none; background: transparent;
+}
+.tab.active { background: var(--surface3); color: var(--text); }
+.notif-btn {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; background: transparent; color: var(--muted); position: relative;
+}
+.notif-dot {
+  width: 7px; height: 7px; background: var(--accent3);
+  border-radius: 50%; position: absolute; top: 7px; right: 7px;
+  border: 1.5px solid var(--surface);
+}
+
+/* ── CONTENT AREA ── */
+.content { padding: 28px; display: flex; flex-direction: column; gap: 24px; flex: 1; }
+
+/* ── HERO SECTION ── */
+.hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(124,92,252,0.15), transparent 70%);
+  pointer-events: none;
+}
+.hero-greeting { grid-column: 1 / -1; }
+.greeting-line { font-size: 12px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.08em; margin-bottom: 6px; }
+.greeting-name { font-family: var(--font-display); font-size: 26px; font-weight: 800; }
+.greeting-name span { 
+  background: linear-gradient(90deg, var(--accent2), var(--accent3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.cycle-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+}
+.cycle-label { font-size: 11px; font-family: var(--font-mono); color: var(--muted); letter-spacing: 0.08em; margin-bottom: 10px; }
+.cycle-number { font-family: var(--font-display); font-size: 36px; font-weight: 800; line-height: 1; }
+.cycle-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.cycle-bar-wrap { height: 4px; background: var(--border2); border-radius: 2px; margin-top: 14px; }
+.cycle-bar { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.streak-fire { font-size: 28px; line-height: 1; margin-bottom: 4px; }
+.level-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(124,92,252,0.15); border: 1px solid rgba(124,92,252,0.3);
+  border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 500;
+  color: var(--neon); margin-top: 8px;
+}
+.level-dot { width: 6px; height: 6px; background: var(--neon); border-radius: 50%; }
+
+/* ── GRID ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* ── SECTION HEADER ── */
+.section-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+}
+.section-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+.see-all { font-size: 12px; color: var(--accent2); cursor: pointer; font-weight: 500; border: none; background: transparent; }
+
+/* ── CARD ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+}
+
+/* ── HABITS ── */
+.habit-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.habit-item:last-child { border-bottom: none; padding-bottom: 0; }
+.habit-item:first-child { padding-top: 0; }
+.habit-icon {
+  width: 44px; height: 44px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.habit-info { flex: 1; }
+.habit-name { font-weight: 500; font-size: 14px; }
+.habit-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.habit-streak {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+}
+.streak-count { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+.check-btn {
+  width: 30px; height: 30px; border-radius: 9px;
+  border: 1.5px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; background: transparent; color: var(--muted);
+  transition: all 0.15s;
+}
+.check-btn.done { background: var(--green); border-color: var(--green); color: #fff; }
+.check-btn svg { width: 14px; height: 14px; }
+
+/* ── SQUAD ── */
+.squad-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.squad-header { display: flex; align-items: center; gap: 10px; }
+.squad-avatar-stack { display: flex; }
+.squad-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid var(--surface2);
+  margin-left: -8px; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+}
+.squad-avatar:first-child { margin-left: 0; }
+.squad-name { font-weight: 600; font-size: 14px; }
+.squad-members { font-size: 12px; color: var(--muted); }
+.squad-progress-row { display: flex; gap: 8px; }
+.squad-member-row { display: flex; align-items: center; gap: 8px; }
+.squad-member-name { font-size: 12px; flex: 1; }
+.mini-bar-wrap { flex: 1; height: 4px; background: var(--border2); border-radius: 2px; }
+.mini-bar { height: 4px; border-radius: 2px; }
+.squad-pct { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.fire-badge {
+  font-size: 11px; padding: 2px 8px; border-radius: 20px;
+  font-weight: 500; white-space: nowrap;
+}
+
+/* ── LEADERBOARD ── */
+.lb-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.lb-row:last-child { border-bottom: none; }
+.lb-rank { font-family: var(--font-mono); font-size: 13px; color: var(--muted); width: 20px; }
+.lb-rank.top { color: var(--amber); font-weight: 700; }
+.lb-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; font-family: var(--font-display);
+  flex-shrink: 0;
+}
+.lb-name { font-size: 14px; font-weight: 500; flex: 1; }
+.lb-you { font-size: 10px; color: var(--accent2); font-family: var(--font-mono); }
+.lb-points { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+.lb-streak { font-size: 12px; color: var(--muted); }
+
+/* ── NOTIFICATIONS ── */
+.notif-item {
+  display: flex; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.notif-text { font-size: 13px; line-height: 1.5; }
+.notif-text strong { color: var(--text); font-weight: 500; }
+.notif-time { font-size: 11px; color: var(--muted); margin-top: 3px; font-family: var(--font-mono); }
+
+/* ── MOOD CHECK ── */
+.mood-strip {
+  display: flex; gap: 8px; justify-content: space-between;
+  margin-top: 12px;
+}
+.mood-btn {
+  flex: 1; padding: 10px 0; border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  cursor: pointer; font-size: 20px; line-height: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transition: all 0.15s;
+  color: inherit;
+}
+.mood-btn:hover { border-color: var(--border2); background: var(--surface3); transform: translateY(-2px); }
+.mood-btn.selected { border-color: var(--accent); background: rgba(124,92,252,0.12); }
+.mood-label { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
+
+/* ── CATEGORIES ── */
+.cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.cat-card {
+  border-radius: var(--r);
+  padding: 16px 12px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  cursor: pointer; border: 1px solid var(--border);
+  transition: all 0.15s;
+  text-align: center;
+}
+.cat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.cat-icon { font-size: 24px; }
+.cat-name { font-size: 12px; font-weight: 500; }
+.cat-count { font-size: 11px; color: var(--muted); }
+
+/* ── CYCLE TIMELINE ── */
+.cycle-timeline { display: flex; gap: 3px; flex-wrap: wrap; }
+.cycle-day {
+  width: 24px; height: 24px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-family: var(--font-mono); color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+}
+.cycle-day.done { background: rgba(52,211,153,0.2); border-color: rgba(52,211,153,0.4); color: var(--green); }
+.cycle-day.today { border-color: var(--accent); color: var(--accent2); font-weight: 700; }
+.cycle-day.missed { background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.3); color: var(--red); }
+.cycle-day.cheat { background: rgba(251,191,36,0.15); border-color: rgba(251,191,36,0.3); color: var(--amber); }
+
+/* ── PENALTY BADGE ── */
+.penalty-card {
+  background: rgba(248,113,113,0.08);
+  border: 1px solid rgba(248,113,113,0.2);
+  border-radius: var(--r);
+  padding: 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.penalty-icon { font-size: 28px; }
+.penalty-text { flex: 1; }
+.penalty-title { font-weight: 600; font-size: 14px; color: var(--red); }
+.penalty-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.pay-btn {
+  padding: 8px 16px; border-radius: var(--r-sm);
+  background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3);
+  color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s;
+}
+.pay-btn:hover { background: rgba(248,113,113,0.25); }
+
+/* ── REWARD CARD ── */
+.reward-card {
+  background: rgba(251,191,36,0.06);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: var(--r);
+  padding: 16px;
+  display: flex; align-items: center; gap: 14px;
+}
+.reward-icon { font-size: 28px; }
+.reward-text { flex: 1; }
+.reward-title { font-weight: 600; font-size: 14px; color: var(--amber); }
+.reward-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.claim-btn {
+  padding: 8px 16px; border-radius: var(--r-sm);
+  background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3);
+  color: var(--amber); font-size: 12px; font-weight: 600; cursor: pointer;
+}
+
+/* ── ADD HABIT MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  padding: 28px;
+  width: 480px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.modal-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+.close-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 12px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.06em; margin-bottom: 8px; display: block; }
+.form-input {
+  width: 100%; padding: 10px 14px; border-radius: var(--r-sm);
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--font-body); font-size: 14px;
+  outline: none; transition: border 0.15s;
+}
+.form-input:focus { border-color: var(--accent); }
+.type-picker { display: flex; gap: 8px; }
+.type-opt {
+  flex: 1; padding: 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--muted); font-size: 13px; cursor: pointer; text-align: center;
+  transition: all 0.15s;
+}
+.type-opt.selected { border-color: var(--accent); color: var(--accent2); background: rgba(124,92,252,0.1); }
+.cat-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+.cat-opt {
+  padding: 8px 14px; border-radius: 20px;
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--muted); font-size: 12px; cursor: pointer;
+  transition: all 0.15s;
+}
+.cat-opt.selected { border-color: var(--accent); color: var(--accent2); background: rgba(124,92,252,0.1); }
+.submit-btn {
+  width: 100%; padding: 13px; border-radius: var(--r-sm);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; color: #fff;
+  font-family: var(--font-display); font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 8px;
+  transition: opacity 0.15s;
+}
+.submit-btn:hover { opacity: 0.9; }
+
+/* ── FLOATING ADD BTN ── */
+.fab {
+  position: fixed; bottom: 28px; right: 28px;
+  width: 52px; height: 52px; border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; color: #fff; font-size: 24px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 32px rgba(124,92,252,0.4);
+  transition: transform 0.15s;
+  z-index: 200;
+}
+.fab:hover { transform: scale(1.05); }
+
+/* ── CHIPS ── */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500; font-family: var(--font-mono);
+  border: 1px solid transparent;
+}
+.chip-purple { background: rgba(124,92,252,0.15); color: var(--neon); border-color: rgba(124,92,252,0.3); }
+.chip-green { background: rgba(52,211,153,0.1); color: var(--green); border-color: rgba(52,211,153,0.3); }
+.chip-amber { background: rgba(251,191,36,0.1); color: var(--amber); border-color: rgba(251,191,36,0.3); }
+.chip-red { background: rgba(248,113,113,0.1); color: var(--red); border-color: rgba(248,113,113,0.3); }
+.chip-blue { background: rgba(96,165,250,0.1); color: var(--blue); border-color: rgba(96,165,250,0.3); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+/* ── ANIMATIONS ── */
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+.pulse { animation: pulse 2s ease infinite; }
+
+.section-block { animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── PAGE VIEWS ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── GRAPHS ── */
+.graph-tabs { display:flex; gap:6px; margin-bottom:16px; }
+.graph-tab {
+  padding:5px 14px; border-radius:20px; font-size:12px; font-weight:500;
+  cursor:pointer; color:var(--muted); background:var(--surface2);
+  border:1px solid var(--border); transition:all 0.15s;
+}
+.graph-tab.active { background:rgba(124,92,252,0.15); color:var(--neon); border-color:rgba(124,92,252,0.35); }
+.chart-wrap { position:relative; height:200px; width:100%; }
+.chart-wrap-tall { position:relative; height:240px; width:100%; }
+.graph-stat-row { display:flex; gap:10px; margin-top:14px; }
+.graph-stat { flex:1; background:var(--surface2); border-radius:var(--r-sm); padding:12px; text-align:center; }
+.graph-stat-n { font-family:var(--font-mono); font-size:18px; font-weight:500; }
+.graph-stat-l { font-size:11px; color:var(--muted); margin-top:2px; }
+.heatmap-grid { display:grid; grid-template-columns:repeat(14,1fr); gap:4px; margin-top:8px; }
+.hm-cell {
+  aspect-ratio:1; border-radius:4px; cursor:pointer;
+  transition:transform 0.1s;
+}
+.hm-cell:hover { transform:scale(1.2); }
+.hm-0 { background:var(--surface2); border:1px solid var(--border); }
+.hm-1 { background:rgba(124,92,252,0.25); }
+.hm-2 { background:rgba(124,92,252,0.5); }
+.hm-3 { background:rgba(124,92,252,0.75); }
+.hm-4 { background:#7C5CFC; }
+.hm-label { font-size:10px; color:var(--muted); font-family:var(--font-mono); }
+.hm-row { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.hm-week-label { font-size:10px; color:var(--muted); font-family:var(--font-mono); width:28px; flex-shrink:0; }
+.squad-graph-legend { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:12px; }
+.legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+.legend-item { display:flex; align-items:flex-start; gap:6px; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo-mark">SP</div>
+  <button class="nav-item active" onclick="showPage('dashboard', this)" title="Home">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+  </button>
+  <button class="nav-item" onclick="showPage('habits', this)" title="Habits">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+  </button>
+  <button class="nav-item" onclick="showPage('squad', this)" title="Squad">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+  </button>
+  <button class="nav-item" onclick="showPage('explore', this)" title="Explore">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+  </button>
+  <button class="nav-item" onclick="showPage('rewards', this)" title="Rewards">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+  </button>
+  <div class="nav-bottom">
+    <button class="nav-item" title="Settings">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+    <div class="profile" onclick="logout()">AK</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="tab-bar" id="tab-bar">
+      <button class="tab active" onclick="switchTab(this,'today')">Today</button>
+      <button class="tab" onclick="switchTab(this,'week')">Week</button>
+      <button class="tab" onclick="switchTab(this,'cycle')">Cycle</button>
+    </div>
+    <button class="notif-btn" onclick="showPage('notifications', document.querySelector('.nav-item:nth-child(5)'))">
+      <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <div class="notif-dot"></div>
+    </button>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+
+      <!-- Hero -->
+      <div class="hero section-block">
+        <div class="hero-greeting">
+          <div class="greeting-line">// DAY 14 OF CYCLE 1</div>
+          <div class="greeting-name">Hey, <span>Arjun</span> 👋 Keep the fire going.</div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-label">CURRENT STREAK</div>
+          <div class="streak-fire">🔥</div>
+          <div class="cycle-number" style="color:var(--amber)">14</div>
+          <div class="cycle-sub">days without breaking</div>
+          <div class="level-badge"><div class="level-dot"></div> Level 4 — Consistent</div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-label">21-DAY CYCLE</div>
+          <div class="cycle-number">14<span style="font-size:18px;color:var(--muted)">/21</span></div>
+          <div class="cycle-sub">days completed</div>
+          <div class="cycle-bar-wrap"><div class="cycle-bar" style="width:67%"></div></div>
+        </div>
+        <div class="cycle-card">
+          <div class="cycle-label">SQUAD RANK</div>
+          <div class="cycle-number" style="color:var(--accent2)">#2</div>
+          <div class="cycle-sub">of 6 in Study Crew</div>
+          <div style="margin-top:8px"><span class="chip chip-purple">↑ 1 spot today</span></div>
+        </div>
+      </div>
+
+      <!-- Mood Check -->
+      <div class="card section-block">
+        <div class="section-header" style="margin-bottom:8px">
+          <div>
+            <div class="section-title">How are you feeling?</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">Your assistant adapts nudges to your mood</div>
+          </div>
+          <span class="chip chip-purple pulse">🤖 AI Active</span>
+        </div>
+        <div class="mood-strip">
+          <button class="mood-btn" onclick="selectMood(this)">😫<div class="mood-label">burnt out</div></button>
+          <button class="mood-btn" onclick="selectMood(this)">😕<div class="mood-label">meh</div></button>
+          <button class="mood-btn selected" onclick="selectMood(this)">😐<div class="mood-label">okay</div></button>
+          <button class="mood-btn" onclick="selectMood(this)">😊<div class="mood-label">good</div></button>
+          <button class="mood-btn" onclick="selectMood(this)">🔥<div class="mood-label">on fire</div></button>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:var(--r-sm);font-size:13px;color:var(--muted);border-left:3px solid var(--accent)">
+          <strong style="color:var(--text)">AI Nudge:</strong> You're doing okay — Priya just completed her coding session. A little friendly competition can push you! Try the 25-min Pomodoro block. 💪
+        </div>
+      </div>
+
+      <!-- Today's Habits + Leaderboard -->
+      <div class="grid-2">
+        <div class="card section-block">
+          <div class="section-header">
+            <div class="section-title">Today's Habits</div>
+            <span class="chip chip-green">3/6 done</span>
+          </div>
+          <div id="habit-list">
+           
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <!-- Leaderboard -->
+          <div class="card section-block">
+            <div class="section-header">
+              <div class="section-title">Squad Leaderboard</div>
+              <span class="chip chip-blue">Live</span>
+            </div>
+            <div class="lb-row">
+              <div class="lb-rank top">🥇</div>
+              <div class="lb-avatar" style="background:rgba(251,191,36,0.2);color:var(--amber)">PR</div>
+              <div class="lb-name">Priya R</div>
+              <div class="lb-points">2,840 <span class="lb-streak">🔥16</span></div>
+            </div>
+            <div class="lb-row" style="background:rgba(124,92,252,0.05);border-radius:var(--r-sm);padding:10px 8px;margin:-2px -4px">
+              <div class="lb-rank top">🥈</div>
+              <div class="lb-avatar" style="background:rgba(124,92,252,0.2);color:var(--neon)">AK</div>
+              <div style="flex:1"><div class="lb-name">Arjun K <span class="lb-you">YOU</span></div></div>
+              <div class="lb-points">2,760 <span class="lb-streak">🔥14</span></div>
+            </div>
+            <div class="lb-row">
+              <div class="lb-rank">3</div>
+              <div class="lb-avatar" style="background:rgba(96,165,250,0.2);color:var(--blue)">MS</div>
+              <div class="lb-name">Mihir S</div>
+              <div class="lb-points">2,690 <span class="lb-streak">🔥12</span></div>
+            </div>
+            <div class="lb-row">
+              <div class="lb-rank">4</div>
+              <div class="lb-avatar" style="background:rgba(52,211,153,0.2);color:var(--green)">KR</div>
+              <div class="lb-name">Kavya R</div>
+              <div class="lb-points">2,510 <span class="lb-streak">🔥10</span></div>
+            </div>
+            <div class="lb-row">
+              <div class="lb-rank">5</div>
+              <div class="lb-avatar" style="background:rgba(244,114,182,0.2);color:var(--accent3)">SN</div>
+              <div class="lb-name">Siddharth N</div>
+              <div class="lb-points">2,200 <span class="lb-streak">🔥8</span></div>
+            </div>
+          </div>
+
+          <!-- Penalty / Reward -->
+          <div class="reward-card section-block">
+            <div class="reward-icon">🏆</div>
+            <div class="reward-text">
+              <div class="reward-title">Cheat Day Unlocked!</div>
+              <div class="reward-desc">You hit 14 days straight. Skip one habit guilt-free.</div>
+            </div>
+            <button class="-btn"
+            onclick="claimCheatDay('${habit.name}', ${habit.streak.current})">
+            Claim
+            </button>
+          </div>
+          <div class="penalty-card section-block">
+            <div class="penalty-icon">⚡</div>
+            <div class="penalty-text">
+              <div class="penalty-title">Siddharth missed yoga</div>
+              <div class="penalty-desc">He loses 50pts. Penalty: ₹10 to charity.</div>
+            </div>
+            <span class="chip chip-red">−50 pts</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 21-Day Timeline -->
+      <div class="card section-block">
+        <div class="section-header">
+          <div class="section-title">21-Day Cycle — DSA Practice</div>
+          <div style="display:flex;gap:8px">
+            <span class="chip chip-green">✓ Done</span>
+            <span class="chip chip-amber">★ Cheat</span>
+            <span class="chip chip-red">✗ Missed</span>
+          </div>
+        </div>
+        <div class="cycle-timeline">
+          <div class="cycle-day done">1</div><div class="cycle-day done">2</div><div class="cycle-day done">3</div>
+          <div class="cycle-day done">4</div><div class="cycle-day done">5</div><div class="cycle-day done">6</div>
+          <div class="cycle-day done">7</div><div class="cycle-day done">8</div><div class="cycle-day done">9</div>
+          <div class="cycle-day done">10</div><div class="cycle-day cheat">11</div><div class="cycle-day done">12</div>
+          <div class="cycle-day done">13</div><div class="cycle-day today">14</div>
+          <div class="cycle-day">15</div><div class="cycle-day">16</div><div class="cycle-day">17</div>
+          <div class="cycle-day">18</div><div class="cycle-day">19</div><div class="cycle-day">20</div>
+          <div class="cycle-day">21</div>
+        </div>
+        <div style="margin-top:14px;font-size:12px;color:var(--muted)">7 days remaining · 1 cheat day used · 0 missed</div>
+      </div>
+
+      <!-- ── ANALYTICS GRAPHS ── -->
+      <div class="card section-block">
+        <div class="section-header">
+          <div class="section-title">Past Performance</div>
+          <div class="graph-tabs">
+            <button class="graph-tab active" onclick="switchGraph(this,'streak')">Streak</button>
+            <button class="graph-tab" onclick="switchGraph(this,'completion')">Completion %</button>
+            <button class="graph-tab" onclick="switchGraph(this,'points')">Points</button>
+            <button class="graph-tab" onclick="switchGraph(this,'squad')">vs Squad</button>
+          </div>
+        </div>
+
+        <!-- Streak Line Chart -->
+        <div id="graph-streak">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Daily habit completion over the last 14 days</div>
+          <div class="chart-wrap"><canvas id="streakChart"></canvas></div>
+          <div class="graph-stat-row">
+            <div class="graph-stat"><div class="graph-stat-n" style="color:var(--amber)">14</div><div class="graph-stat-l">Current streak</div></div>
+            <div class="graph-stat"><div class="graph-stat-n" style="color:var(--green)">92%</div><div class="graph-stat-l">Avg completion</div></div>
+            <div class="graph-stat"><div class="graph-stat-n" style="color:var(--neon)">1</div><div class="graph-stat-l">Cheat days used</div></div>
+            <div class="graph-stat"><div class="graph-stat-n" style="color:var(--red)">0</div><div class="graph-stat-l">Missed days</div></div>
+          </div>
+        </div>
+
+        <!-- Completion % Bar Chart -->
+        <div id="graph-completion" style="display:none">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Habit-by-habit completion rate (last 14 days)</div>
+          <div class="chart-wrap-tall"><canvas id="completionChart"></canvas></div>
+        </div>
+
+        <!-- Points Area Chart -->
+        <div id="graph-points" style="display:none">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">XP points earned per day</div>
+          <div class="chart-wrap"><canvas id="pointsChart"></canvas></div>
+          <div class="graph-stat-row">
+            <div class="graph-stat"><div class="graph-stat-n" style="color:var(--neon)">2,760</div><div class="graph-stat-l">Total XP</div></div>
+            <div class="graph-stat"><div class="graph-stat-n" style="color:var(--green)">+197</div><div class="graph-stat-l">XP today</div></div>
+            <div class="graph-stat"><div class="graph-stat-n" style="color:var(--blue)">Level 4</div><div class="graph-stat-l">Current rank</div></div>
+          </div>
+        </div>
+
+        <!-- Squad Comparison Line Chart -->
+        <div id="graph-squad" style="display:none">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Cumulative XP comparison across squad members</div>
+          <div class="squad-graph-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#A78BFA;margin-top:4px"></div>You (Arjun)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#FBBF24;margin-top:4px"></div>Priya</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#60A5FA;margin-top:4px"></div>Mihir</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#34D399;margin-top:4px"></div>Kavya</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#F472B6;margin-top:4px"></div>Siddharth</div>
+          </div>
+          <div class="chart-wrap-tall"><canvas id="squadChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Activity Heatmap -->
+      <div class="card section-block">
+        <div class="section-header">
+          <div class="section-title">Activity Heatmap</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="hm-label">Less</span>
+            <div style="width:12px;height:12px;border-radius:3px;" class="hm-0"></div>
+            <div style="width:12px;height:12px;border-radius:3px;" class="hm-1"></div>
+            <div style="width:12px;height:12px;border-radius:3px;" class="hm-2"></div>
+            <div style="width:12px;height:12px;border-radius:3px;" class="hm-3"></div>
+            <div style="width:12px;height:12px;border-radius:3px;" class="hm-4"></div>
+            <span class="hm-label">More</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Habits completed per day — last 56 days</div>
+        <div id="heatmap"></div>
+      </div>
+
+    </div><!-- /dashboard -->
+
+    <!-- HABITS PAGE -->
+    <div class="page" id="page-habits">
+      <div class="section-block">
+        <div class="section-header">
+          <div class="section-title">All Habits</div>
+          <button class="see-all" onclick="openModal()">+ New habit</button>
+        </div>
+        <!-- Categories -->
+        <div class="cat-grid" style="margin-bottom:20px">
+          <div class="cat-card" style="background:rgba(96,165,250,0.08)"><div class="cat-icon">💻</div><div class="cat-name">Coding</div><div class="cat-count">2 habits</div></div>
+          <div class="cat-card" style="background:rgba(52,211,153,0.08)"><div class="cat-icon">🏃</div><div class="cat-name">Fitness</div><div class="cat-count">2 habits</div></div>
+          <div class="cat-card" style="background:rgba(251,191,36,0.08)"><div class="cat-icon">📚</div><div class="cat-name">Study</div><div class="cat-count">1 habit</div></div>
+          <div class="cat-card" style="background:rgba(167,139,250,0.08)"><div class="cat-icon">🎸</div><div class="cat-name">Music</div><div class="cat-count">1 habit</div></div>
+          <div class="cat-card" style="background:rgba(244,114,182,0.08)"><div class="cat-icon">🎨</div><div class="cat-name">Art</div><div class="cat-count">1 habit</div></div>
+          <div class="cat-card" style="background:rgba(96,165,250,0.08)"><div class="cat-icon">💃</div><div class="cat-name">Dance</div><div class="cat-count">0 habits</div></div>
+          <div class="cat-card" style="background:rgba(248,113,113,0.08)"><div class="cat-icon">🧘</div><div class="cat-name">Wellness</div><div class="cat-count">1 habit</div></div>
+          <div class="cat-card" style="background:rgba(124,92,252,0.08);border-style:dashed" onclick="openModal()"><div class="cat-icon" style="color:var(--muted)">＋</div><div class="cat-name" style="color:var(--muted)">Custom</div><div class="cat-count">add new</div></div>
+        </div>
+
+        <div class="card">
+          <div style="font-size:12px;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.06em;margin-bottom:14px">COMPETITIVE HABITS</div>
+          <div class="habit-item">
+            <div class="habit-icon" style="background:rgba(96,165,250,0.15)">💻</div>
+            <div class="habit-info"><div class="habit-name">DSA Practice</div><div class="habit-meta">Coding · Squad · 14-day streak · Proof required</div></div>
+            <span class="chip chip-purple">Competitive</span>
+          </div>
+          <div class="habit-item">
+            <div class="habit-icon" style="background:rgba(52,211,153,0.15)">🏃</div>
+            <div class="habit-info"><div class="habit-name">Morning Run</div><div class="habit-meta">Fitness · Squad · 14-day streak · GPS proof</div></div>
+            <span class="chip chip-purple">Competitive</span>
+          </div>
+          <div class="habit-item">
+            <div class="habit-icon" style="background:rgba(251,191,36,0.15)">📚</div>
+            <div class="habit-info"><div class="habit-name">Read 30 Pages</div><div class="habit-meta">Study · Squad · 14-day streak</div></div>
+            <span class="chip chip-purple">Competitive</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);font-family:var(--font-mono);letter-spacing:0.06em;margin:18px 0 14px">INDIVIDUAL INTERESTS</div>
+          <div class="habit-item">
+            <div class="habit-icon" style="background:rgba(167,139,250,0.15)">🎸</div>
+            <div class="habit-info"><div class="habit-name">Guitar Practice</div><div class="habit-meta">Music · Personal · 9-day streak · No proof</div></div>
+            <span class="chip chip-blue">Individual</span>
+          </div>
+          <div class="habit-item">
+            <div class="habit-icon" style="background:rgba(244,114,182,0.15)">🎨</div>
+            <div class="habit-info"><div class="habit-name">Sketch / Illustration</div><div class="habit-meta">Art · Personal · 6-day streak</div></div>
+            <span class="chip chip-blue">Individual</span>
+          </div>
+          <div class="habit-item">
+            <div class="habit-icon" style="background:rgba(248,113,113,0.15)">🧘</div>
+            <div class="habit-info"><div class="habit-name">Meditation</div><div class="habit-meta">Wellness · Personal · 3-day streak</div></div>
+            <span class="chip chip-blue">Individual</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SQUAD PAGE -->
+    <div class="page" id="page-squad">
+      <div class="section-block">
+        <div class="section-header">
+          <div class="section-title">Your Squads</div>
+          <button class="see-all">+ Join / Create</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card" style="border-color:rgba(124,92,252,0.3)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <div>
+                <div style="font-family:var(--font-display);font-weight:700;font-size:17px">Study Crew 📚</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:3px">21-Day Cycle · Day 14 of 21</div>
+              </div>
+              <span class="chip chip-purple">Active</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="squad-member-row">
+                <div class="lb-avatar" style="background:rgba(251,191,36,0.2);color:var(--amber);width:28px;height:28px;font-size:10px;flex-shrink:0">PR</div>
+                <div style="font-size:13px;flex:1">Priya R</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:100%;background:var(--green)"></div></div>
+                <div class="squad-pct">6/6</div>
+                <span style="font-size:11px">🔥16</span>
+              </div>
+              <div class="squad-member-row">
+                <div class="lb-avatar" style="background:rgba(124,92,252,0.2);color:var(--neon);width:28px;height:28px;font-size:10px;flex-shrink:0">AK</div>
+                <div style="font-size:13px;flex:1">You</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:50%;background:var(--accent)"></div></div>
+                <div class="squad-pct">3/6</div>
+                <span style="font-size:11px">🔥14</span>
+              </div>
+              <div class="squad-member-row">
+                <div class="lb-avatar" style="background:rgba(96,165,250,0.2);color:var(--blue);width:28px;height:28px;font-size:10px;flex-shrink:0">MS</div>
+                <div style="font-size:13px;flex:1">Mihir S</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:83%;background:var(--blue)"></div></div>
+                <div class="squad-pct">5/6</div>
+                <span style="font-size:11px">🔥12</span>
+              </div>
+              <div class="squad-member-row">
+                <div class="lb-avatar" style="background:rgba(52,211,153,0.2);color:var(--green);width:28px;height:28px;font-size:10px;flex-shrink:0">KR</div>
+                <div style="font-size:13px;flex:1">Kavya R</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:33%;background:var(--amber)"></div></div>
+                <div class="squad-pct">2/6</div>
+                <span style="font-size:11px">🔥10</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <div>
+                <div style="font-family:var(--font-display);font-weight:700;font-size:17px">Fitness Beasts 🏋️</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:3px">21-Day Cycle · Day 7 of 21</div>
+              </div>
+              <span class="chip chip-green">Active</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="squad-member-row">
+                <div class="lb-avatar" style="background:rgba(244,114,182,0.2);color:var(--accent3);width:28px;height:28px;font-size:10px;flex-shrink:0">SN</div>
+                <div style="font-size:13px;flex:1">Siddharth N</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:100%;background:var(--green)"></div></div>
+                <div class="squad-pct">3/3</div>
+                <span style="font-size:11px">🔥7</span>
+              </div>
+              <div class="squad-member-row">
+                <div class="lb-avatar" style="background:rgba(124,92,252,0.2);color:var(--neon);width:28px;height:28px;font-size:10px;flex-shrink:0">AK</div>
+                <div style="font-size:13px;flex:1">You</div>
+                <div class="mini-bar-wrap"><div class="mini-bar" style="width:67%;background:var(--accent)"></div></div>
+                <div class="squad-pct">2/3</div>
+                <span style="font-size:11px">🔥7</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPLORE PAGE -->
+    <div class="page" id="page-explore">
+      <div class="section-block">
+        <div class="section-header">
+          <div class="section-title">Discover Squads & Challenges</div>
+        </div>
+        <div class="grid-3">
+          <div class="card" style="cursor:pointer">
+            <div style="font-size:28px;margin-bottom:8px">🎸</div>
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:4px">Guitar 21</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Daily practice · 4 members</div>
+            <span class="chip chip-blue">Individual OK</span>
+          </div>
+          <div class="card" style="cursor:pointer">
+            <div style="font-size:28px;margin-bottom:8px">💃</div>
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:4px">Dance Daily</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Any style · 8 members</div>
+            <span class="chip chip-purple">Competitive</span>
+          </div>
+          <div class="card" style="cursor:pointer">
+            <div style="font-size:28px;margin-bottom:8px">🧑‍💻</div>
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:4px">Build in Public</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Ship code daily · 12 members</div>
+            <span class="chip chip-purple">Competitive</span>
+          </div>
+          <div class="card" style="cursor:pointer">
+            <div style="font-size:28px;margin-bottom:8px">✍️</div>
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:4px">Write Every Day</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Journaling or essays · 6 members</div>
+            <span class="chip chip-blue">Individual OK</span>
+          </div>
+          <div class="card" style="cursor:pointer">
+            <div style="font-size:28px;margin-bottom:8px">🎨</div>
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:4px">Art Block</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Sketch or paint daily · 3 members</div>
+            <span class="chip chip-blue">Individual OK</span>
+          </div>
+          <div class="card" style="cursor:pointer">
+            <div style="font-size:28px;margin-bottom:8px">🏊</div>
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:4px">Swim Club</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Fitness · 5 members</div>
+            <span class="chip chip-purple">Competitive</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REWARDS PAGE -->
+    <div class="page" id="page-rewards">
+      <div class="section-block">
+        <div class="section-header">
+          <div class="section-title">Rewards & Penalties</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="reward-card">
+            <div class="reward-icon">🏆</div>
+            <div class="reward-text">
+              <div class="reward-title">Cheat Day Unlocked</div>
+              <div class="reward-desc">14-day streak reward — skip any 1 habit today.</div>
+            </div>
+           <button class="claim-btn" onclick="alert('clicked')">Claim</button>
+          </div>
+          <div class="reward-card">
+            <div class="reward-icon">⭐</div>
+            <div class="reward-text">
+              <div class="reward-title">Level 5 — Elite</div>
+              <div class="reward-desc">Complete 21-day cycle without missing. 7 days left.</div>
+            </div>
+            <span class="chip chip-amber">Upcoming</span>
+          </div>
+          <div class="card">
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:14px">Penalty Log</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--surface2);border-radius:var(--r-sm)">
+                <div style="font-size:13px">Missed Meditation <span style="color:var(--muted);font-size:11px">3 days ago</span></div>
+                <span class="chip chip-red">−30 pts</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(248,113,113,0.06);border-radius:var(--r-sm);border:1px solid rgba(248,113,113,0.2)">
+                <div style="font-size:13px">Charity penalty pending <span style="color:var(--muted);font-size:11px">opted in</span></div>
+                <button class="pay-btn">Pay ₹10</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:14px">Reputation & Ranks</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <div style="flex:1;min-width:120px;background:var(--surface2);border-radius:var(--r-sm);padding:14px;text-align:center">
+                <div style="font-size:28px">⚡</div>
+                <div style="font-weight:600;font-size:14px;margin-top:6px">Spark</div>
+                <div style="font-size:11px;color:var(--muted)">1–7 day streak</div>
+              </div>
+              <div style="flex:1;min-width:120px;background:var(--surface2);border-radius:var(--r-sm);padding:14px;text-align:center">
+                <div style="font-size:28px">🔥</div>
+                <div style="font-weight:600;font-size:14px;margin-top:6px">Consistent</div>
+                <div style="font-size:11px;color:var(--muted)">8–21 days</div>
+              </div>
+              <div style="flex:1;min-width:120px;background:rgba(124,92,252,0.1);border-radius:var(--r-sm);padding:14px;text-align:center;border:1px solid rgba(124,92,252,0.3)">
+                <div style="font-size:28px">💎</div>
+                <div style="font-weight:600;font-size:14px;margin-top:6px;color:var(--neon)">Elite</div>
+                <div style="font-size:11px;color:var(--muted)">Full cycle</div>
+              </div>
+              <div style="flex:1;min-width:120px;background:var(--surface2);border-radius:var(--r-sm);padding:14px;text-align:center">
+                <div style="font-size:28px">👑</div>
+                <div style="font-weight:600;font-size:14px;margin-top:6px">Legend</div>
+                <div style="font-size:11px;color:var(--muted)">84-day commit</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS PAGE -->
+    <div class="page" id="page-notifications">
+      <div class="card section-block">
+        <div class="section-title" style="margin-bottom:14px">Notifications</div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(251,191,36,0.15)">🔥</div>
+          <div><div class="notif-text"><strong>Priya</strong> just logged her DSA session — she's now 1 task ahead of you!</div><div class="notif-time">2 min ago</div></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(52,211,153,0.15)">✅</div>
+          <div><div class="notif-text"><strong>Mihir</strong> completed his morning run. Squad fitness goal: 4/5 done today.</div><div class="notif-time">34 min ago</div></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(248,113,113,0.15)">⚡</div>
+          <div><div class="notif-text"><strong>Penalty alert:</strong> Siddharth missed yoga — he's deducted 50 points. You gain relative rank.</div><div class="notif-time">1 hr ago</div></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(124,92,252,0.15)">🤖</div>
+          <div><div class="notif-text"><strong>AI nudge:</strong> It's 7 PM — you haven't done guitar yet. Even 10 mins counts. Keep the streak alive!</div><div class="notif-time">2 hr ago</div></div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon" style="background:rgba(96,165,250,0.15)">🏆</div>
+          <div><div class="notif-text">You unlocked a <strong>Cheat Day</strong> for hitting 14 days! Use it wisely.</div><div class="notif-time">Today, 9:00 AM</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()">＋</button>
+
+<!-- ADD HABIT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">New Habit</div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">HABIT NAME</label>
+      <input class="form-input" type="text" placeholder="e.g. Practice guitar, Read 20 pages…"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">CATEGORY</label>
+      <div class="cat-picker">
+        <div class="cat-opt selected" onclick="selectCat(this)">💻 Coding</div>
+        <div class="cat-opt" onclick="selectCat(this)">🏃 Fitness</div>
+        <div class="cat-opt" onclick="selectCat(this)">📚 Study</div>
+        <div class="cat-opt" onclick="selectCat(this)">🎸 Music</div>
+        <div class="cat-opt" onclick="selectCat(this)">🎨 Art</div>
+        <div class="cat-opt" onclick="selectCat(this)">💃 Dance</div>
+        <div class="cat-opt" onclick="selectCat(this)">🧘 Wellness</div>
+        <div class="cat-opt" onclick="selectCat(this)">✏️ Custom</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">HABIT TYPE</label>
+      <div class="type-picker">
+        <div class="type-opt selected" onclick="selectType(this)">🏆 Competitive<br><span style="font-size:11px;color:var(--muted)">Squad + leaderboard</span></div>
+        <div class="type-opt" onclick="selectType(this)">🎯 Individual<br><span style="font-size:11px;color:var(--muted)">Personal growth only</span></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">DAILY DURATION</label>
+      <input class="form-input" type="text" placeholder="e.g. 30 min, 1 hr"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">PROOF METHOD</label>
+      <select class="form-input">
+        <option>No proof required</option>
+        <option>Photo / Screenshot</option>
+        <option>GPS / Location</option>
+        <option>Timer check-in</option>
+        <option>Manual log</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">PENALTY IF MISSED</label>
+      <div class="type-picker">
+        <div class="type-opt selected" onclick="selectType(this)">−Points only</div>
+        <div class="type-opt" onclick="selectType(this)">₹ Charity donation</div>
+      </div>
+    </div>
+    <button class="submit-btn" onclick="addHabit()">Start 21 Day Challenge</button>
+  </div>
+</div>
+
+<script>
+  // 🔒 Protect page  
+if (!localStorage.getItem("loggedUser")) {  
+  window.location.href = "login.html";  
+}
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const p = document.getElementById('page-' + id);
+  if (p) p.classList.add('active');
+  if (btn) btn.classList.add('active');
+  const titles = { dashboard: 'Dashboard', habits: 'My Habits', squad: 'Squads', explore: 'Explore', rewards: 'Rewards & Ranks', notifications: 'Notifications' };
+  document.getElementById('page-title').textContent = titles[id] || 'StreakPack';
+}
+
+function switchTab(btn, tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function selectMood(btn) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function toggleHabit(btn) {
+  btn.classList.toggle('done');
+  if (btn.classList.contains('done')) {
+    btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  } else {
+    btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  }
+}
+
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function selectCat(el) {
+  el.closest('.cat-picker').querySelectorAll('.cat-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectType(el) {
+  el.closest('.type-picker').querySelectorAll('.type-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── GRAPH TAB SWITCHER ──
+function switchGraph(btn, id) {
+  document.querySelectorAll('.graph-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['streak','completion','points','squad'].forEach(g => {
+    const el = document.getElementById('graph-' + g);
+    if (el) el.style.display = g === id ? 'block' : 'none';
+  });
+}
+
+const days14 = ['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','D11','D12','D13','D14'];
+const baseScales = {
+  x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#8B8AA0',font:{family:"'DM Mono',monospace",size:10}} },
+  y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#8B8AA0',font:{family:"'DM Mono',monospace",size:10}}, border:{display:false} }
+};
+const baseTooltip = {
+  backgroundColor:'#1C1C27', titleColor:'#F0EFF8', bodyColor:'#8B8AA0',
+  borderColor:'rgba(255,255,255,0.1)', borderWidth:1, padding:10,
+  titleFont:{family:"'DM Mono',monospace",size:11},
+  bodyFont:{family:"'DM Sans',sans-serif",size:12}
+};
+
+window.addEventListener('load', function() {
+
+  // ── STREAK LINE ──
+  const streakData = [5,5,6,6,6,6,6,6,5,6,3,6,6,3];
+  new Chart(document.getElementById('streakChart'), {
+    type:'line',
+    data:{
+      labels:days14,
+      datasets:[{
+        label:'Habits Done', data:streakData,
+        borderColor:'#A78BFA',
+        backgroundColor:function(ctx){
+          const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);
+          g.addColorStop(0,'rgba(124,92,252,0.3)'); g.addColorStop(1,'rgba(124,92,252,0)'); return g;
+        },
+        fill:true, tension:0.4, pointRadius:5, borderWidth:2,
+        pointBackgroundColor:streakData.map((v,i)=>i===10?'#FBBF24':v<5?'#F87171':'#A78BFA'),
+        pointBorderColor:'#0A0A0F', pointBorderWidth:2
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:baseTooltip},scales:{...baseScales,y:{...baseScales.y,min:0,max:7,ticks:{...baseScales.y.ticks,stepSize:1}}}}
+  });
+
+  // ── COMPLETION HORIZONTAL BAR ──
+  new Chart(document.getElementById('completionChart'), {
+    type:'bar',
+    data:{
+      labels:['DSA Practice','Morning Run','Read 30pg','Guitar','Sketch','Meditation'],
+      datasets:[{
+        label:'Completion %',
+        data:[100,100,93,64,43,21],
+        backgroundColor:['rgba(52,211,153,0.75)','rgba(52,211,153,0.75)','rgba(52,211,153,0.75)','rgba(124,92,252,0.7)','rgba(251,191,36,0.7)','rgba(251,191,36,0.7)'],
+        borderRadius:8, borderSkipped:false, barThickness:22
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{...baseTooltip,callbacks:{label:ctx=>ctx.parsed.x+'% completed'}}},
+      scales:{x:{...baseScales.x,min:0,max:100,ticks:{...baseScales.x.ticks,callback:v=>v+'%'}},y:{...baseScales.y}}
+    }
+  });
+
+  // ── POINTS AREA ──
+  const pts=[180,200,195,210,190,200,205,180,210,215,120,205,210,197];
+  new Chart(document.getElementById('pointsChart'), {
+    type:'line',
+    data:{
+      labels:days14,
+      datasets:[{
+        label:'XP Earned', data:pts, borderColor:'#60A5FA',
+        backgroundColor:function(ctx){
+          const g=ctx.chart.ctx.createLinearGradient(0,0,0,200);
+          g.addColorStop(0,'rgba(96,165,250,0.25)'); g.addColorStop(1,'rgba(96,165,250,0)'); return g;
+        },
+        fill:true, tension:0.4, pointRadius:4, borderWidth:2,
+        pointBackgroundColor:'#60A5FA', pointBorderColor:'#0A0A0F', pointBorderWidth:2
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:baseTooltip},scales:{...baseScales,y:{...baseScales.y,ticks:{...baseScales.y.ticks,callback:v=>v+' xp'}}}}
+  });
+
+  // ── SQUAD COMPARISON ──
+  const mk=(data,color)=>({data,borderColor:color,tension:0.4,pointRadius:0,borderWidth:2,fill:false});
+  new Chart(document.getElementById('squadChart'), {
+    type:'line',
+    data:{
+      labels:days14,
+      datasets:[
+        {...mk([200,400,595,800,990,1190,1390,1570,1780,1990,2110,2315,2530,2760],'#A78BFA'),borderWidth:2.5,label:'You'},
+        {...mk([210,420,630,845,1050,1265,1480,1700,1920,2140,2360,2560,2700,2840],'#FBBF24'),label:'Priya'},
+        {...mk([190,375,560,740,925,1115,1300,1490,1670,1860,2040,2230,2460,2690],'#60A5FA'),label:'Mihir'},
+        {...mk([180,355,520,690,860,1030,1205,1380,1545,1710,1870,2020,2260,2510],'#34D399'),label:'Kavya'},
+        {...mk([170,330,490,645,790,940,1090,1225,1360,1480,1590,1700,1920,2200],'#F472B6'),label:'Siddharth'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...baseTooltip,mode:'index',intersect:false}},
+      scales:{...baseScales,y:{...baseScales.y,ticks:{...baseScales.y.ticks,callback:v=>v+' xp'}}}
+    }
+  });
+
+  // ── HEATMAP ──
+  const heatmapEl = document.getElementById('heatmap');
+  if (!heatmapEl) return;
+  const wkLabels = ['W1','W2','W3','W4','W5','W6','W7','W8'];
+  const dayLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const raw = [
+    [0,1,2,3,4,4,3],[4,4,3,4,4,2,1],[4,3,4,4,3,4,4],[4,4,4,3,4,4,2],
+    [3,4,4,4,3,4,4],[4,4,4,4,4,3,4],[4,3,4,3,4,4,4],[4,4,4,4,4,4,3]
+  ];
+  let html = '<div style="display:grid;grid-template-columns:32px repeat(7,1fr);gap:4px;margin-bottom:4px">';
+  html += '<div></div>';
+  dayLabels.forEach(d=>{html+=`<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center">${d}</div>`;});
+  html += '</div>';
+  raw.forEach((week,wi)=>{
+    html += '<div style="display:grid;grid-template-columns:32px repeat(7,1fr);gap:4px;margin-bottom:4px">';
+    html += `<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;display:flex;align-items:center">${wkLabels[wi]}</div>`;
+    week.forEach(v=>{
+      const tips=['0 habits','1 habit','2 habits','3-4 habits','All done!'][v];
+      html+=`<div class="hm-cell hm-${v}" title="${tips}" style="aspect-ratio:1;border-radius:4px;cursor:pointer;transition:transform 0.1s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>`;
+    });
+    html += '</div>';
+  });
+  heatmapEl.innerHTML = html;
+});
+async function loadHabits() {
+  const res = await fetch("http://localhost:3000/api/habits");
+  const data = await res.json();
+
+  const habits = data.data;
+
+  let html = "";
+
+  habits.forEach(habit => {
+    html += `
+      <div class="habit-item">
+
+        <div class="habit-name">${habit.name}</div>
+
+        <div>🔥 ${habit.streak.current}</div>
+
+        <!-- ✅ NEW: Cheat Days -->
+        <div>
+          Cheat Days: ${Math.floor(habit.streak.current / 21)}
+        </div>
+
+        <!-- ✅ NEW: Claim Button -->
+        <button class="claim-btn"
+          onclick="claimCheatDay('${habit.name}', ${habit.streak.current})">
+          Claim
+        </button>
+
+      </div>
+    `;
+  });
+
+  document.getElementById("habit-list").innerHTML = html;
+}
+
+// CALL FUNCTION
+loadHabits();
+
+async function addHabit() {
+  const name = document.querySelector(".form-input").value;
+
+  if (!name) {
+    alert("Enter habit name");
+    return;
+  }
+
+  try {
+    await fetch("http://localhost:3000/api/habits", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: name
+      })
+    });
+
+    alert("Habit added ✅");
+
+    // reload habits
+    loadHabits();
+
+  } catch (err) {
+    console.error(err);
+    alert("Error adding habit");
+  }
+}
+function logout() {
+  const confirmLogout = confirm("Are you sure you want to logout?");
+
+  if (confirmLogout) {
+    localStorage.removeItem("loggedUser");
+    window.location.href = "login.html";
+  }
+}
+
+function claimCheatDay(habitName, currentStreak) {
+
+  let cheatDaysData = JSON.parse(localStorage.getItem("cheatDaysData")) || {};
+
+  // initialize for habit
+  if (!cheatDaysData[habitName]) {
+    cheatDaysData[habitName] = Math.floor(currentStreak / 21);
+  }
+
+  let available = cheatDaysData[habitName];
+
+  // ❌ No cheat day
+  if (available <= 0) {
+    alert("⚠️ No cheat days available for this habit.\nComplete 21 days to earn one 💪");
+    return;
+  }
+
+  // 💬 Pretty confirmation
+  const message =
+`😌 Need a breather?
+
+You’ve earned this moment.
+
+✨ Available Cheat Days: ${available}
+
+Take a guilt-free pause today —
+your streak will stay strong 💪`;
+
+  const confirmAction = confirm(message);
+
+  if (!confirmAction) return;
+
+  // 🔥 Apply cheat
+  cheatDaysData[habitName] -= 1;
+
+  // save
+  localStorage.setItem("cheatDaysData", JSON.stringify(cheatDaysData));
+
+  alert(`✨ Cheat day used!\nRemaining: ${cheatDaysData[habitName]} 🔥`);
+
+  // reload UI
+  loadHabits();
+}
+
+function claimFullDayCheat(habits) {
+
+  // ✅ Check eligibility
+  const allEligible = habits.every(h => h.streak.current >= 21);
+
+  if (!allEligible) {
+
+    // 💬 Pretty message (like you asked)
+    alert(`😅 Not yet unlocked!
+
+You're doing great, but a Full Day Cheat
+is only available when ALL your habits
+reach a 21-day streak 🔥
+
+Keep pushing — you're close 💪`);
+
+    return;
+  }
+
+  let fullCheat = localStorage.getItem("fullDayCheat") || 1;
+  fullCheat = parseInt(fullCheat);
+
+  if (fullCheat <= 0) {
+    alert("⚠️ You've already used your Full Day Cheat!");
+    return;
+  }
+
+  // 💬 Pretty confirmation
+  const message =
+`😌 You’ve earned a full reset.
+
+Every habit. Every effort. Every day.
+
+✨ This is your reward.
+
+Take a full day off — guilt-free.
+Your streaks stay untouched. 💪`;
+
+  const confirmAction = confirm(message);
+
+  if (!confirmAction) return;
+
+  // 🔥 Apply cheat
+  fullCheat -= 1;
+  localStorage.setItem("fullDayCheat", fullCheat);
+
+  alert("🌟 Full Day Cheat activated!\nAll streaks protected 🔥");
+
+  loadHabits();
+}
+
+function triggerFullDayCheat() {
+  fetch("http://localhost:3000/api/habits")
+    .then(res => res.json())
+    .then(data => {
+      claimFullDayCheat(data.data);
+    });
+}
+
+const allEligible = habits.every(h => h.streak.current >= 21);
+
+window.triggerFullDayCheat = function() {
+  alert("Function running 🔥");
+
+  fetch("http://localhost:3000/api/habits")
+    .then(res => res.json())
+    .then(data => {
+      claimFullDayCheat(data.data);
+    });
+};
+
+</script>
+</body>
+</html>

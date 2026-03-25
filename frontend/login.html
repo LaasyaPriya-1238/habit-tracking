@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreakPack — Login</title>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    #login-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #121212;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #login-box {
+      background: #1e1e1e;
+      padding: 2em;
+      border-radius: 10px;
+      text-align: center;
+      width: 300px;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background: orange;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="login-container">
+  <div id="login-box">
+    <h2>Login to StreakPack</h2>
+
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+
+    <button id="login-btn">Login</button>
+
+    <p id="login-message" style="color:red;"></p>
+  </div>
+</div>
+
+<script>
+  const loginBtn = document.getElementById("login-btn");
+  const loginMessage = document.getElementById("login-message");
+
+  // Demo users
+  const users = {
+    "arjun": "streakfire",
+    "priya": "coderqueen",
+    "mihir": "fitlife",
+    "kavya": "artlover"
+  };
+
+  // Login logic
+  loginBtn.addEventListener("click", () => {
+    const username = document.getElementById("username").value.trim().toLowerCase();
+    const password = document.getElementById("password").value.trim();
+
+    if (users[username] && users[username] === password) {
+      
+      // Save login
+      localStorage.setItem("loggedUser", username);
+
+      // ✅ Redirect to dashboard
+      window.location.href = "app.html";
+
+    } else {
+      loginMessage.textContent = "Invalid username or password";
+    }
+  });
+</script>
+
+</body>
+</html>
