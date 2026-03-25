@@ -63,8 +63,12 @@ app.get('/health', (_req, res) => {
 app.use('/api/habits', habitsRouter);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
-app.use((_req, res) => {
-  res.status(404).json({ success: false, error: { message: 'Route not found.' } });
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
 });
 
 // ── ERROR HANDLER ─────────────────────────────────────────────────────────────
