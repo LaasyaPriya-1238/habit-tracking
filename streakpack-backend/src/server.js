@@ -12,25 +12,24 @@ const habitsRouter             = require('./routes/habits');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// ── CORS — must be FIRST ──────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 // ── MIDDLEWARE ────────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://habit-tracking-xi.vercel.app'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));                         // allow all origins in dev
-app.use(express.json());                  // parse JSON bodies
+app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Request logger (dev only)
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, _res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-    next();
-  });
-}
+// Request logger
+app.use((req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
 
 // ── DATABASE ──────────────────────────────────────────────────────────────────
 initSchema();
@@ -54,17 +53,21 @@ app.get('/', (_req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use('/api/habits', habitsRouter);
 
-// 404 handler — must come after all routes
+// ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({ success: false, error: { message: 'Route not found.' } });
 });
 
-// Central error handler — must be last
+// ── ERROR HANDLER ─────────────────────────────────────────────────────────────
 app.use(errorHandler);
 
 // ── START ─────────────────────────────────────────────────────────────────────
@@ -74,4 +77,4 @@ app.listen(PORT, () => {
   console.log(`   Database    : ${process.env.DB_PATH  || './streakpack.db'}\n`);
 });
 
-module.exports = app; // for testing
+module.exports = app;
