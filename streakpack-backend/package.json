@@ -4,6 +4,7 @@
   "description": "StreakPack — Habits API (Node.js + Express + SQLite)",
   "main": "src/server.js",
   "scripts": {
+    "build": "npm rebuild better-sqlite3",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
