@@ -1,6 +1,4 @@
-const API_URL = window.location.hostname === "localhost" 
-  ? "http://localhost:3000" 
-  : "https://your-railway-app.up.railway.app";
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -1137,10 +1135,14 @@ body::before {
 </div>
 
 <script>
-  // 🔒 Protect page  
-if (!localStorage.getItem("loggedUser")) {  
-  window.location.href = "login.html";  
+const API_URL = window.location.hostname === "localhost"
+  ? "http://localhost:3000"
+  : "https://your-railway-app.up.railway.app";
+
+if (!localStorage.getItem("loggedUser")) {
+  window.location.href = "login.html";
 }
+
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1163,11 +1165,7 @@ function selectMood(btn) {
 
 function toggleHabit(btn) {
   btn.classList.toggle('done');
-  if (btn.classList.contains('done')) {
-    btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-  } else {
-    btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-  }
+  btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
 }
 
 function openModal() {
@@ -1189,7 +1187,6 @@ function selectType(el) {
   el.classList.add('selected');
 }
 
-// ── GRAPH TAB SWITCHER ──
 function switchGraph(btn, id) {
   document.querySelectorAll('.graph-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
@@ -1198,6 +1195,100 @@ function switchGraph(btn, id) {
     if (el) el.style.display = g === id ? 'block' : 'none';
   });
 }
+
+async function loadHabits() {
+  try {
+    const res = await fetch(`${API_URL}/api/habits`);
+    const data = await res.json();
+    const habits = data.data;
+    let html = "";
+    habits.forEach(habit => {
+      html += `
+        <div class="habit-item">
+          <div class="habit-name">${habit.name}</div>
+          <div>🔥 ${habit.streak.current}</div>
+          <div>Cheat Days: ${Math.floor(habit.streak.current / 21)}</div>
+          <button class="claim-btn" onclick="claimCheatDay('${habit.name}', ${habit.streak.current})">Claim</button>
+        </div>
+      `;
+    });
+    document.getElementById("habit-list").innerHTML = html;
+  } catch (err) {
+    console.error("Failed to load habits", err);
+    document.getElementById("habit-list").innerHTML = '<div style="color:var(--muted);font-size:13px">Could not load habits.</div>';
+  }
+}
+
+loadHabits();
+
+async function addHabit() {
+  const name = document.querySelector(".form-input").value;
+  if (!name) { alert("Enter habit name"); return; }
+  try {
+    await fetch(`${API_URL}/api/habits`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name })
+    });
+    alert("Habit added ✅");
+    closeModal();
+    loadHabits();
+  } catch (err) {
+    console.error(err);
+    alert("Error adding habit");
+  }
+}
+
+function logout() {
+  const confirmLogout = confirm("Are you sure you want to logout?");
+  if (confirmLogout) {
+    localStorage.removeItem("loggedUser");
+    window.location.href = "login.html";
+  }
+}
+
+function claimCheatDay(habitName, currentStreak) {
+  let cheatDaysData = JSON.parse(localStorage.getItem("cheatDaysData")) || {};
+  if (!cheatDaysData[habitName]) {
+    cheatDaysData[habitName] = Math.floor(currentStreak / 21);
+  }
+  let available = cheatDaysData[habitName];
+  if (available <= 0) {
+    alert("⚠️ No cheat days available for this habit.\nComplete 21 days to earn one 💪");
+    return;
+  }
+  const message = `😌 Need a breather?\n\nYou've earned this moment.\n\n✨ Available Cheat Days: ${available}\n\nTake a guilt-free pause today —\nyour streak will stay strong 💪`;
+  if (!confirm(message)) return;
+  cheatDaysData[habitName] -= 1;
+  localStorage.setItem("cheatDaysData", JSON.stringify(cheatDaysData));
+  alert(`✨ Cheat day used!\nRemaining: ${cheatDaysData[habitName]} 🔥`);
+  loadHabits();
+}
+
+function claimFullDayCheat(habits) {
+  const allEligible = habits.every(h => h.streak.current >= 21);
+  if (!allEligible) {
+    alert(`😅 Not yet unlocked!\n\nA Full Day Cheat is only available when\nALL your habits reach a 21-day streak 🔥\n\nKeep pushing — you're close 💪`);
+    return;
+  }
+  let fullCheat = parseInt(localStorage.getItem("fullDayCheat") || 1);
+  if (fullCheat <= 0) {
+    alert("⚠️ You've already used your Full Day Cheat!");
+    return;
+  }
+  const message = `😌 You've earned a full reset.\n\nEvery habit. Every effort. Every day.\n\n✨ This is your reward.\n\nTake a full day off — guilt-free.\nYour streaks stay untouched. 💪`;
+  if (!confirm(message)) return;
+  fullCheat -= 1;
+  localStorage.setItem("fullDayCheat", fullCheat);
+  alert("🌟 Full Day Cheat activated!\nAll streaks protected 🔥");
+  loadHabits();
+}
+
+window.triggerFullDayCheat = function() {
+  fetch(`${API_URL}/api/habits`)
+    .then(res => res.json())
+    .then(data => { claimFullDayCheat(data.data); });
+};
 
 const days14 = ['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10','D11','D12','D13','D14'];
 const baseScales = {
@@ -1213,7 +1304,6 @@ const baseTooltip = {
 
 window.addEventListener('load', function() {
 
-  // ── STREAK LINE ──
   const streakData = [5,5,6,6,6,6,6,6,5,6,3,6,6,3];
   new Chart(document.getElementById('streakChart'), {
     type:'line',
@@ -1234,7 +1324,6 @@ window.addEventListener('load', function() {
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:baseTooltip},scales:{...baseScales,y:{...baseScales.y,min:0,max:7,ticks:{...baseScales.y.ticks,stepSize:1}}}}
   });
 
-  // ── COMPLETION HORIZONTAL BAR ──
   new Chart(document.getElementById('completionChart'), {
     type:'bar',
     data:{
@@ -1253,7 +1342,6 @@ window.addEventListener('load', function() {
     }
   });
 
-  // ── POINTS AREA ──
   const pts=[180,200,195,210,190,200,205,180,210,215,120,205,210,197];
   new Chart(document.getElementById('pointsChart'), {
     type:'line',
@@ -1272,7 +1360,6 @@ window.addEventListener('load', function() {
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:baseTooltip},scales:{...baseScales,y:{...baseScales.y,ticks:{...baseScales.y.ticks,callback:v=>v+' xp'}}}}
   });
 
-  // ── SQUAD COMPARISON ──
   const mk=(data,color)=>({data,borderColor:color,tension:0.4,pointRadius:0,borderWidth:2,fill:false});
   new Chart(document.getElementById('squadChart'), {
     type:'line',
@@ -1293,7 +1380,6 @@ window.addEventListener('load', function() {
     }
   });
 
-  // ── HEATMAP ──
   const heatmapEl = document.getElementById('heatmap');
   if (!heatmapEl) return;
   const wkLabels = ['W1','W2','W3','W4','W5','W6','W7','W8'];
@@ -1302,211 +1388,21 @@ window.addEventListener('load', function() {
     [0,1,2,3,4,4,3],[4,4,3,4,4,2,1],[4,3,4,4,3,4,4],[4,4,4,3,4,4,2],
     [3,4,4,4,3,4,4],[4,4,4,4,4,3,4],[4,3,4,3,4,4,4],[4,4,4,4,4,4,3]
   ];
-  let html = '<div style="display:grid;grid-template-columns:32px repeat(7,1fr);gap:4px;margin-bottom:4px">';
-  html += '<div></div>';
-  dayLabels.forEach(d=>{html+=`<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center">${d}</div>`;});
+  let html = '<div style="display:grid;grid-template-columns:32px repeat(7,1fr);gap:4px;margin-bottom:4px"><div></div>';
+  dayLabels.forEach(d => { html += `<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center">${d}</div>`; });
   html += '</div>';
-  raw.forEach((week,wi)=>{
+  raw.forEach((week, wi) => {
     html += '<div style="display:grid;grid-template-columns:32px repeat(7,1fr);gap:4px;margin-bottom:4px">';
     html += `<div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;display:flex;align-items:center">${wkLabels[wi]}</div>`;
-    week.forEach(v=>{
-      const tips=['0 habits','1 habit','2 habits','3-4 habits','All done!'][v];
-      html+=`<div class="hm-cell hm-${v}" title="${tips}" style="aspect-ratio:1;border-radius:4px;cursor:pointer;transition:transform 0.1s" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>`;
+    week.forEach(v => {
+      const tips = ['0 habits','1 habit','2 habits','3-4 habits','All done!'][v];
+      html += `<div class="hm-cell hm-${v}" title="${tips}" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></div>`;
     });
     html += '</div>';
   });
   heatmapEl.innerHTML = html;
 });
-async function loadHabits() {
-  const res = await fetch("http://localhost:3000/api/habits");
-  const data = await res.json();
-
-  const habits = data.data;
-
-  let html = "";
-
-  habits.forEach(habit => {
-    html += `
-      <div class="habit-item">
-
-        <div class="habit-name">${habit.name}</div>
-
-        <div>🔥 ${habit.streak.current}</div>
-
-        <!-- ✅ NEW: Cheat Days -->
-        <div>
-          Cheat Days: ${Math.floor(habit.streak.current / 21)}
-        </div>
-
-        <!-- ✅ NEW: Claim Button -->
-        <button class="claim-btn"
-          onclick="claimCheatDay('${habit.name}', ${habit.streak.current})">
-          Claim
-        </button>
-
-      </div>
-    `;
-  });
-
-  document.getElementById("habit-list").innerHTML = html;
-}
-
-// CALL FUNCTION
-loadHabits();
-
-async function addHabit() {
-  const name = document.querySelector(".form-input").value;
-
-  if (!name) {
-    alert("Enter habit name");
-    return;
-  }
-
-  try {
-    await fetch("http://localhost:3000/api/habits", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: name
-      })
-    });
-
-    alert("Habit added ✅");
-
-    // reload habits
-    loadHabits();
-
-  } catch (err) {
-    console.error(err);
-    alert("Error adding habit");
-  }
-}
-function logout() {
-  const confirmLogout = confirm("Are you sure you want to logout?");
-
-  if (confirmLogout) {
-    localStorage.removeItem("loggedUser");
-    window.location.href = "login.html";
-  }
-}
-
-function claimCheatDay(habitName, currentStreak) {
-
-  let cheatDaysData = JSON.parse(localStorage.getItem("cheatDaysData")) || {};
-
-  // initialize for habit
-  if (!cheatDaysData[habitName]) {
-    cheatDaysData[habitName] = Math.floor(currentStreak / 21);
-  }
-
-  let available = cheatDaysData[habitName];
-
-  // ❌ No cheat day
-  if (available <= 0) {
-    alert("⚠️ No cheat days available for this habit.\nComplete 21 days to earn one 💪");
-    return;
-  }
-
-  // 💬 Pretty confirmation
-  const message =
-`😌 Need a breather?
-
-You’ve earned this moment.
-
-✨ Available Cheat Days: ${available}
-
-Take a guilt-free pause today —
-your streak will stay strong 💪`;
-
-  const confirmAction = confirm(message);
-
-  if (!confirmAction) return;
-
-  // 🔥 Apply cheat
-  cheatDaysData[habitName] -= 1;
-
-  // save
-  localStorage.setItem("cheatDaysData", JSON.stringify(cheatDaysData));
-
-  alert(`✨ Cheat day used!\nRemaining: ${cheatDaysData[habitName]} 🔥`);
-
-  // reload UI
-  loadHabits();
-}
-
-function claimFullDayCheat(habits) {
-
-  // ✅ Check eligibility
-  const allEligible = habits.every(h => h.streak.current >= 21);
-
-  if (!allEligible) {
-
-    // 💬 Pretty message (like you asked)
-    alert(`😅 Not yet unlocked!
-
-You're doing great, but a Full Day Cheat
-is only available when ALL your habits
-reach a 21-day streak 🔥
-
-Keep pushing — you're close 💪`);
-
-    return;
-  }
-
-  let fullCheat = localStorage.getItem("fullDayCheat") || 1;
-  fullCheat = parseInt(fullCheat);
-
-  if (fullCheat <= 0) {
-    alert("⚠️ You've already used your Full Day Cheat!");
-    return;
-  }
-
-  // 💬 Pretty confirmation
-  const message =
-`😌 You’ve earned a full reset.
-
-Every habit. Every effort. Every day.
-
-✨ This is your reward.
-
-Take a full day off — guilt-free.
-Your streaks stay untouched. 💪`;
-
-  const confirmAction = confirm(message);
-
-  if (!confirmAction) return;
-
-  // 🔥 Apply cheat
-  fullCheat -= 1;
-  localStorage.setItem("fullDayCheat", fullCheat);
-
-  alert("🌟 Full Day Cheat activated!\nAll streaks protected 🔥");
-
-  loadHabits();
-}
-
-function triggerFullDayCheat() {
-  fetch("http://localhost:3000/api/habits")
-    .then(res => res.json())
-    .then(data => {
-      claimFullDayCheat(data.data);
-    });
-}
-
-const allEligible = habits.every(h => h.streak.current >= 21);
-
-window.triggerFullDayCheat = function() {
-  alert("Function running 🔥");
-
-  fetch("http://localhost:3000/api/habits")
-    .then(res => res.json())
-    .then(data => {
-      claimFullDayCheat(data.data);
-    });
-};
-
 </script>
+
 </body>
 </html>
