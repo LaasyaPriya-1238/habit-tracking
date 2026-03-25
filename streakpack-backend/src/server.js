@@ -13,7 +13,14 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ── MIDDLEWARE ────────────────────────────────────────────────────────────────
-app.use(cors());                          // allow all origins in dev
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://habit-tracking-xi.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));                         // allow all origins in dev
 app.use(express.json());                  // parse JSON bodies
 app.use(express.urlencoded({ extended: false }));
 
